@@ -117,6 +117,8 @@ Console 负责浏览器入口和静态资源服务行为：
 - `nacos.console.ui.enabled` 控制是否开启开源 Console UI；
 - `announcement` 和 `console-guide` 内容在存在配置文件时作为展示内容读取；
 - 静态资源路径和浏览器资源可以排除鉴权，但该排除范围不得包含领域修改 API。
+- UI 发起的文件下载（例如配置导出）必须使用普通 fetch/XHR 请求而不是 `window.open`，
+  以便请求在浏览器 Network 面板中可见、携带标准鉴权请求头，并能把错误反馈给操作者。
 - Next Console 顶栏的多语言导航文字不得将已认证用户的菜单和退出登录操作挤出桌面视口。
 
 Console guide 和 announcement 内容属于 UI 展示数据，不是标准 Core 服务端状态，也不得作为领域配置使用。

@@ -1,4 +1,5 @@
 import client from './client';
+import type { AxiosResponse } from 'axios';
 import type { ApiResult } from './types';
 import type {
   Config,
@@ -12,6 +13,22 @@ import type {
   ConfigListenerInfo,
   ConfigBetaInfo,
 } from '@/types/config';
+
+export interface ExportFile {
+  blob: Blob;
+  filename: string;
+}
+
+const DEFAULT_EXPORT_FILE_NAME = 'nacos_config_export.zip';
+
+/**
+ * Parse the download file name from a Content-Disposition header, e.g.
+ * `attachment;filename=nacos_config_export_20240101120000.zip`.
+ */
+export function parseExportFileName(disposition: string): string {
+  const match = disposition.match(/filename\*?=(?:UTF-8''|")?([^";]+)"?/i);
+  return match ? decodeURIComponent(match[1]) : DEFAULT_EXPORT_FILE_NAME;
+}
 
 export const configApi = {
   // List configs
@@ -88,25 +105,40 @@ export const configApi = {
   stopBeta: (params: { dataId: string; groupName: string; namespaceId?: string }): ApiResult<boolean> =>
     client.delete('v3/console/cs/config/beta', { params }) as ApiResult<boolean>,
 
-  // Export - returns URL string for window.open() browser download
-  exportUrl: (params: { namespaceId: string; ids?: string; groupName?: string; appName?: string; dataId?: string }): string => {
-    const baseURL = client.defaults.baseURL || '';
-    const queryParams = new URLSearchParams();
-    queryParams.set('namespaceId', params.namespaceId);
-    if (params.ids !== undefined) queryParams.set('ids', params.ids);
-    if (params.groupName) queryParams.set('groupName', params.groupName);
-    if (params.appName) queryParams.set('appName', params.appName);
-    if (params.dataId) queryParams.set('dataId', params.dataId);
-    // Add auth params from localStorage
-    try {
-      const tokenStr = localStorage.getItem('token');
-      if (tokenStr) {
-        const tokenData = JSON.parse(tokenStr);
-        if (tokenData.accessToken) queryParams.set('accessToken', tokenData.accessToken);
-        if (tokenData.username) queryParams.set('username', tokenData.username);
-      }
-    } catch { /* ignore */ }
-    return `${baseURL}v3/console/cs/config/export2?${queryParams.toString()}`;
+  // Export - fetch configs ZIP via XHR so the request is visible in the browser Network console
+  export: async (params: {
+    namespaceId: string;
+    ids?: string;
+    groupName?: string;
+    appName?: string;
+    dataId?: string;
+  }): Promise<ExportFile> => {
+    const response = (await client.get('v3/console/cs/config/export2', {
+      params: {
+        namespaceId: params.namespaceId,
+        ids: params.ids ?? '',
+        groupName: params.groupName || '',
+        appName: params.appName || '',
+        dataId: params.dataId || '',
+      },
+      // Large exports can exceed the default 10s client timeout
+      timeout: 0,
+      responseType: 'blob',
+    })) as unknown as AxiosResponse<Blob>;
+    const disposition: string = response.headers?.['content-disposition'] || '';
+    return { blob: response.data, filename: parseExportFileName(disposition) };
+  },
+
+  // Trigger a browser download for an exported file
+  downloadBlob: (blob: Blob, filename: string): void => {
+    const blobUrl = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = blobUrl;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    window.URL.revokeObjectURL(blobUrl);
   },
 
   // Import - POST multipart/form-data (ZIP file)

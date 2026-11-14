@@ -141,6 +141,10 @@ Console owns the browser entry and static asset serving behavior:
   configured files when present;
 - static asset paths and browser resources may be excluded from auth checks, but
   that exclusion must not include domain mutation APIs.
+- file downloads initiated by the UI (e.g. config export) must be requested with
+  a regular fetch/XHR call instead of `window.open`, so the request is visible
+  in the browser Network console, carries the standard auth headers, and its
+  errors can be surfaced to the operator.
 - In the Next console header, translated navigation labels must not push the
   authenticated user's menu and logout action outside the visible desktop viewport.
 

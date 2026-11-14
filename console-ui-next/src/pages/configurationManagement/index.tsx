@@ -244,27 +244,35 @@ export default function ConfigurationManagementPage() {
   };
 
   // Export
-  const handleExportAll = () => {
-    const url = configApi.exportUrl({
-      namespaceId: currentNamespace,
-      ids: '',
-      dataId: dataId || '',
-      groupName: groupName || '',
-      appName: appName || '',
-    });
-    window.open(url);
+  const handleExportAll = async () => {
+    try {
+      const { blob, filename } = await configApi.export({
+        namespaceId: currentNamespace,
+        ids: '',
+        dataId: dataId || '',
+        groupName: groupName || '',
+        appName: appName || '',
+      });
+      configApi.downloadBlob(blob, filename);
+    } catch {
+      // Error toast handled by interceptor
+    }
   };
 
-  const handleExportSelected = () => {
+  const handleExportSelected = async () => {
     if (selectedIds.size === 0) {
       toast.error(t('config.noSelection'));
       return;
     }
-    const url = configApi.exportUrl({
-      namespaceId: currentNamespace,
-      ids: Array.from(selectedIds).join(','),
-    });
-    window.open(url);
+    try {
+      const { blob, filename } = await configApi.export({
+        namespaceId: currentNamespace,
+        ids: Array.from(selectedIds).join(','),
+      });
+      configApi.downloadBlob(blob, filename);
+    } catch {
+      // Error toast handled by interceptor
+    }
   };
 
   // Import

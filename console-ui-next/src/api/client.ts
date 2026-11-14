@@ -116,6 +116,12 @@ client.interceptors.request.use(
 // Response interceptor
 client.interceptors.response.use(
   (response) => {
+    // Binary downloads need the full AxiosResponse so callers can read headers
+    // (e.g. Content-Disposition filename) and the Blob body.
+    if (response.config.responseType === 'blob') {
+      return response;
+    }
+
     // Check for auth_admin_request in server state responses
     if (response.data && typeof response.data === 'object') {
       // Handle auth_admin_request flag

@@ -600,7 +600,7 @@ class ConfigurationManagement extends React.Component {
     });
   };
 
-  openUri(url, params) {
+  resolveUrl(url) {
     // Resolve relative URLs against the correct base path,
     // stripping /legacy/ or /next/ prefix that the browser would otherwise prepend.
     let resolvedUrl = url;
@@ -608,34 +608,85 @@ class ConfigurationManagement extends React.Component {
       const basePath = window.location.pathname.replace(/\/(next|legacy)(\/.*)?$/, '/') || '/';
       resolvedUrl = basePath + resolvedUrl;
     }
-    window.open(
-      [
-        resolvedUrl,
-        Object.keys(params)
-          .map(key => `${key}=${params[key]}`)
-          .join('&'),
-      ].join('?')
-    );
+    return resolvedUrl;
+  }
+
+  /**
+   * Download the exported configs ZIP through a regular fetch request, so that the
+   * request is visible in the browser Network console.
+   */
+  downloadExport(params) {
+    const { locale = {} } = this.props;
+    let accessToken = '';
+    let username = '';
+    try {
+      const token = JSON.parse(localStorage.token || '{}');
+      accessToken = token.accessToken || '';
+      username = token.username || '';
+    } catch (e) {
+      // ignore and request anonymously
+    }
+    const query = [`accessToken=${accessToken}`, `username=${username}`]
+      .concat(Object.keys(params).map(key => `${key}=${encodeURIComponent(params[key])}`))
+      .join('&');
+    const headers = {};
+    if (accessToken) {
+      headers.Authorization = `Bearer ${accessToken}`;
+      headers.AccessToken = accessToken;
+    }
+    fetch([this.resolveUrl('v3/console/cs/config/export2'), query].join('?'), { headers })
+      .then(response => {
+        if (!response.ok) {
+          return response.text().then(text => {
+            let message = locale.exportFailed;
+            try {
+              const result = JSON.parse(text);
+              if (result.message || result.data) {
+                message = `${result.message || ''} ${result.data || ''}`.trim();
+              }
+            } catch (e) {
+              // keep the default failure message
+            }
+            throw new Error(message);
+          });
+        }
+        const disposition = response.headers.get('Content-Disposition') || '';
+        return response.blob().then(blob => ({ blob, disposition }));
+      })
+      .then(({ blob, disposition }) => {
+        const match = disposition.match(/filename\*?=(?:UTF-8''|")?([^";]+)"?/i);
+        const filename = match ? decodeURIComponent(match[1]) : 'nacos_config_export.zip';
+        const blobUrl = window.URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = blobUrl;
+        link.download = filename;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        window.URL.revokeObjectURL(blobUrl);
+      })
+      .catch(error => {
+        Dialog.alert({
+          title: locale.exportFailed,
+          content: error.message || locale.exportFailed,
+        });
+      });
   }
 
   exportData() {
-    const { group, appName, dataId, openUri } = this;
-    const { accessToken = '', username = '' } = JSON.parse(localStorage.token || '{}');
-    openUri('v3/console/cs/config/export2', {
+    const { group, appName, dataId } = this;
+    this.downloadExport({
       namespaceId: getParams('namespace'),
       groupName: group,
       appName,
       dataId,
       ids: '',
-      accessToken,
-      username,
     });
   }
 
   exportSelectedData() {
     const ids = [];
     const { locale = {} } = this.props;
-    const { accessToken = '', username = '' } = JSON.parse(localStorage.token || '{}');
     if (!configsTableSelected.size) {
       Dialog.alert({
         title: locale.exportSelectedAlertTitle,
@@ -644,13 +695,11 @@ class ConfigurationManagement extends React.Component {
       return;
     }
     configsTableSelected.forEach((value, key, map) => ids.push(key));
-    this.openUri('v3/console/cs/config/export2', {
+    this.downloadExport({
       namespaceId: getParams('namespace'),
       groupName: '',
       appName: '',
       ids: ids.join(','),
-      accessToken,
-      username,
     });
   }
 
