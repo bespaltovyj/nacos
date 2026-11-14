@@ -117,6 +117,10 @@ Executor 和队列边界由[任务执行规范](../design/foundation-task-execut
 - 当导出通过存储 ID 选择配置时，导出结果必须限制在请求中归一化后的 `namespaceId` 内。
 - 当前导出 API 中的 `ids` 选择器属于已废弃并待移除的兼容路径；后续导出选择应基于
   `namespaceId`、`groupName`、`dataId` 身份，而不是持久化 ID。
+- 可通过 `nacos.config.import.enabled=false` 关闭导入，通过
+  `nacos.config.export.enabled=false` 关闭导出；两者默认值均为 `true`。当操作被关闭时，
+  Admin 与 Console 的导入/导出 API 必须以 HTTP 状态码 405
+  （`ErrorCode.API_FUNCTION_DISABLED`）拒绝请求，且不得读取或写入任何配置数据。
 
 ## 7. 接口规则
 

@@ -150,6 +150,12 @@ Import, export, and clone are management operations:
 - the `ids` selector on current export APIs is a deprecated compatibility path
   and is pending removal; future export selection should be based on
   `namespaceId`, `groupName`, and `dataId` identity rather than persistence IDs.
+- import can be disabled with `nacos.config.import.enabled=false` and export can
+  be disabled with `nacos.config.export.enabled=false`; both default to
+  `true`. When an operation is disabled, the Admin and Console import/export
+  APIs must reject the request with HTTP status 405
+  (`ErrorCode.API_FUNCTION_DISABLED`) and must not read or write any config
+  data.
 
 ## 7. Interface Rules
 

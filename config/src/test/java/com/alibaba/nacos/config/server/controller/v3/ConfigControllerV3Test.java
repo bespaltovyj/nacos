@@ -26,6 +26,7 @@ import com.alibaba.nacos.api.model.Page;
 import com.alibaba.nacos.api.model.v2.Result;
 import com.alibaba.nacos.common.http.param.MediaType;
 import com.alibaba.nacos.common.utils.JacksonUtils;
+import com.alibaba.nacos.config.server.configuration.ConfigCommonConfig;
 import com.alibaba.nacos.config.server.constant.Constants;
 import com.alibaba.nacos.config.server.model.ConfigAllInfo;
 import com.alibaba.nacos.config.server.model.ConfigInfo;
@@ -47,6 +48,7 @@ import com.alibaba.nacos.auth.config.NacosAuthConfig;
 import com.alibaba.nacos.core.auth.AuthAdminFilter;
 import com.alibaba.nacos.core.code.ControllerMethodsCache;
 import com.alibaba.nacos.core.context.RequestContextHolder;
+import com.alibaba.nacos.core.exception.NacosApiExceptionHandler;
 import com.alibaba.nacos.plugin.auth.api.AuthResult;
 import com.alibaba.nacos.plugin.auth.api.Permission;
 import com.alibaba.nacos.plugin.auth.exception.AccessException;
@@ -649,6 +651,47 @@ class ConfigControllerV3Test {
         
         int actualValue = mockmvc.perform(builder).andReturn().getResponse().getStatus();
         assertEquals(200, actualValue);
+    }
+    
+    @Test
+    void testExportConfigDisabled() throws Exception {
+        ConfigCommonConfig.getInstance().setExportConfigEnabled(false);
+        MockMvc disabledMockMvc = MockMvcBuilders.standaloneSetup(configControllerV3)
+            .setControllerAdvice(new NacosApiExceptionHandler()).build();
+        try {
+            MockHttpServletRequestBuilder builder = MockMvcRequestBuilders
+                .get(Constants.CONFIG_ADMIN_V3_PATH + "/export")
+                .param("dataId", "dataId").param("groupName", "group")
+                .param("namespaceId", "public");
+            
+            int actualValue =
+                disabledMockMvc.perform(builder).andReturn().getResponse().getStatus();
+            assertEquals(405, actualValue);
+            Mockito.verifyNoInteractions(configInfoPersistService);
+        } finally {
+            ConfigCommonConfig.getInstance().setExportConfigEnabled(true);
+        }
+    }
+    
+    @Test
+    void testImportAndPublishConfigDisabled() throws Exception {
+        ConfigCommonConfig.getInstance().setImportConfigEnabled(false);
+        MockMvc disabledMockMvc = MockMvcBuilders.standaloneSetup(configControllerV3)
+            .setControllerAdvice(new NacosApiExceptionHandler()).build();
+        try {
+            MockMultipartFile file =
+                new MockMultipartFile("file", "test.zip", "application/zip", "test".getBytes());
+            MockMultipartHttpServletRequestBuilder builder = MockMvcRequestBuilders.multipart(
+                Constants.CONFIG_ADMIN_V3_PATH + "/import").file(file).param("src_user", "test")
+                .param("namespaceId", "public").param("policy", "ABORT");
+            
+            int actualValue =
+                disabledMockMvc.perform(builder).andReturn().getResponse().getStatus();
+            assertEquals(405, actualValue);
+            Mockito.verifyNoInteractions(configInfoPersistService);
+        } finally {
+            ConfigCommonConfig.getInstance().setImportConfigEnabled(true);
+        }
     }
     
     @Test

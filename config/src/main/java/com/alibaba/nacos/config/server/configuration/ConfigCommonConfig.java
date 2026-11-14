@@ -39,6 +39,10 @@ public class ConfigCommonConfig extends AbstractDynamicConfig {
     
     private boolean derbyOpsEnabled = false;
     
+    private boolean importConfigEnabled = true;
+    
+    private boolean exportConfigEnabled = true;
+    
     private int maxPatternCount = 20;
     
     private int maxMatchedConfigCount = 500;
@@ -76,6 +80,22 @@ public class ConfigCommonConfig extends AbstractDynamicConfig {
         this.derbyOpsEnabled = derbyOpsEnabled;
     }
     
+    public boolean isImportConfigEnabled() {
+        return importConfigEnabled;
+    }
+    
+    public void setImportConfigEnabled(boolean importConfigEnabled) {
+        this.importConfigEnabled = importConfigEnabled;
+    }
+    
+    public boolean isExportConfigEnabled() {
+        return exportConfigEnabled;
+    }
+    
+    public void setExportConfigEnabled(boolean exportConfigEnabled) {
+        this.exportConfigEnabled = exportConfigEnabled;
+    }
+    
     public int getMaxPatternCount() {
         return maxPatternCount;
     }
@@ -92,6 +112,10 @@ public class ConfigCommonConfig extends AbstractDynamicConfig {
         batchSize = EnvUtil.getProperty("nacos.config.push.batchSize", Integer.class, 20);
         derbyOpsEnabled =
             EnvUtil.getProperty("nacos.config.derby.ops.enabled", Boolean.class, false);
+        importConfigEnabled =
+            EnvUtil.getProperty("nacos.config.import.enabled", Boolean.class, true);
+        exportConfigEnabled =
+            EnvUtil.getProperty("nacos.config.export.enabled", Boolean.class, true);
         
         maxPatternCount =
             EnvUtil.getProperty("nacos.config.fuzzy.watch.max.pattern.count", Integer.class, 20);
@@ -109,6 +133,8 @@ public class ConfigCommonConfig extends AbstractDynamicConfig {
     public String toString() {
         return "ConfigCommonConfig{" + "maxPushRetryTimes=" + maxPushRetryTimes
             + ", derbyOpsEnabled=" + derbyOpsEnabled
+            + ", importConfigEnabled=" + importConfigEnabled
+            + ", exportConfigEnabled=" + exportConfigEnabled
             + '}';
     }
 }

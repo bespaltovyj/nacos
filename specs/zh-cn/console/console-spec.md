@@ -177,7 +177,9 @@ Beta 发布不提交或清空尚未发送的正式发布说明。
 - Console 不得在本地持久化 Config、Naming、AI 或 Core 领域数据；
 - 远端请求必须使用已配置的 remote server context path；
 - 远端操作应优先使用 Maintainer SDK 或 Admin API 契约，而不是依赖私有服务端内部实现；
-- 文件导入导出等大 payload 工作流必须保持和对应 UI 工作流一致的鉴权和大小限制。
+- 文件导入导出等大 payload 工作流必须保持和对应 UI 工作流一致的鉴权和大小限制；
+  Console 导入/导出 API 还必须遵守服务端的 `nacos.config.import.enabled` 和
+  `nacos.config.export.enabled` 开关，当对应操作被关闭时返回 HTTP 405。
 
 远端 member lookup 是 Console 进程自己的运维视图，它本身不会改变 Nacos Server 集群成员关系。
 

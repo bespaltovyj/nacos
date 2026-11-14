@@ -219,7 +219,10 @@ Rules:
 - remote operations should prefer Maintainer SDK or Admin API contracts instead
   of relying on private server internals;
 - file import/export and other large payload workflows must keep the same
-  authorization and size limits as the corresponding UI workflow.
+  authorization and size limits as the corresponding UI workflow; the Console
+  import/export APIs must also honor the `nacos.config.import.enabled` and
+  `nacos.config.export.enabled` server switches and return HTTP 405 when the
+  corresponding operation is disabled.
 
 Remote member lookup is an operational view for the console process. It does
 not change Nacos Server cluster membership by itself.

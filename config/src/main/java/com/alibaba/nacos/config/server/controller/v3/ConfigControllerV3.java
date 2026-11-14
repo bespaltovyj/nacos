@@ -39,6 +39,7 @@ import com.alibaba.nacos.common.utils.DateFormatUtils;
 import com.alibaba.nacos.common.utils.NamespaceUtil;
 import com.alibaba.nacos.common.utils.Pair;
 import com.alibaba.nacos.common.utils.StringUtils;
+import com.alibaba.nacos.config.server.configuration.ConfigCommonConfig;
 import com.alibaba.nacos.config.server.constant.Constants;
 import com.alibaba.nacos.config.server.constant.ParametersField;
 import com.alibaba.nacos.config.server.model.ConfigAllInfo;
@@ -584,6 +585,11 @@ public class ConfigControllerV3 {
         @RequestParam(value = "policy", defaultValue = "ABORT") SameConfigPolicy policy,
         MultipartFile file)
         throws NacosException {
+        if (!ConfigCommonConfig.getInstance().isImportConfigEnabled()) {
+            throw new NacosApiException(HttpStatus.METHOD_NOT_ALLOWED.value(),
+                ErrorCode.API_FUNCTION_DISABLED,
+                "Config import is disabled, please set `nacos.config.import.enabled=true` to enabled this feature.");
+        }
         Map<String, Object> failedData = new HashMap<>(4);
         if (Objects.isNull(file)) {
             return Result.failure(ErrorCode.DATA_EMPTY, failedData);
@@ -742,6 +748,11 @@ public class ConfigControllerV3 {
         parser = ConfigExportHttpResourceParser.class)
     public ResponseEntity<byte[]> exportConfig(ConfigFormV3 configForm,
         @RequestParam(value = "ids", required = false) List<Long> ids) throws NacosApiException {
+        if (!ConfigCommonConfig.getInstance().isExportConfigEnabled()) {
+            throw new NacosApiException(HttpStatus.METHOD_NOT_ALLOWED.value(),
+                ErrorCode.API_FUNCTION_DISABLED,
+                "Config export is disabled, please set `nacos.config.export.enabled=true` to enabled this feature.");
+        }
         configForm.blurSearchValidate();
         if (ids != null) {
             ids.removeAll(Collections.singleton(null));

@@ -27,12 +27,15 @@ import com.alibaba.nacos.api.config.model.ConfigGrayInfo;
 import com.alibaba.nacos.api.config.model.ConfigListenerInfo;
 import com.alibaba.nacos.api.config.model.SameConfigPolicy;
 import com.alibaba.nacos.api.exception.NacosException;
+import com.alibaba.nacos.api.exception.api.NacosApiException;
 import com.alibaba.nacos.api.model.Page;
+import com.alibaba.nacos.api.model.v2.ErrorCode;
 import com.alibaba.nacos.api.model.v2.Result;
 import com.alibaba.nacos.auth.annotation.Secured;
 import com.alibaba.nacos.config.server.auth.ConfigCloneHttpResourceParser;
 import com.alibaba.nacos.config.server.auth.ConfigExportHttpResourceParser;
 import com.alibaba.nacos.config.server.auth.ConfigNamespaceHttpResourceParser;
+import com.alibaba.nacos.config.server.configuration.ConfigCommonConfig;
 import com.alibaba.nacos.common.utils.NamespaceUtil;
 import com.alibaba.nacos.common.utils.StringUtils;
 import com.alibaba.nacos.config.server.constant.Constants;
@@ -338,6 +341,11 @@ public class ConsoleConfigController {
         parser = ConfigExportHttpResourceParser.class)
     public ResponseEntity<byte[]> exportConfigV2(ConfigFormV3 configForm,
         @RequestParam(value = "ids", required = false) List<Long> ids) throws Exception {
+        if (!ConfigCommonConfig.getInstance().isExportConfigEnabled()) {
+            throw new NacosApiException(HttpStatus.METHOD_NOT_ALLOWED.value(),
+                ErrorCode.API_FUNCTION_DISABLED,
+                "Config export is disabled, please set `nacos.config.export.enabled=true` to enabled this feature.");
+        }
         configForm.blurSearchValidate();
         if (ids != null) {
             ids.removeAll(Collections.singleton(null));
@@ -371,6 +379,11 @@ public class ConsoleConfigController {
         @RequestParam(value = "policy", defaultValue = "ABORT") SameConfigPolicy policy,
         MultipartFile file)
         throws NacosException {
+        if (!ConfigCommonConfig.getInstance().isImportConfigEnabled()) {
+            throw new NacosApiException(HttpStatus.METHOD_NOT_ALLOWED.value(),
+                ErrorCode.API_FUNCTION_DISABLED,
+                "Config import is disabled, please set `nacos.config.import.enabled=true` to enabled this feature.");
+        }
         namespaceId = NamespaceUtil.processNamespaceParameter(namespaceId);
         
         if (StringUtils.isBlank(srcUser)) {
